@@ -1,0 +1,30 @@
+ServerPort: :8888
+ServerName: ino-gathere
+
+Redis:
+  Host: 
+    - localhost:7000
+    - localhost:7001
+    - localhost:7002
+    - localhost:7003
+    - localhost:7004
+    - localhost:7005
+  Passwd: ""
+  PoolSize: 10 
+  PoolTimeout: 3
+
+ZapLog:
+  ErrLog: log/err.log
+  WarnLog: log/warn.log
+  InfoLog: log/info.log
+  Maxsize: 100
+  MaxAge: 15
+  MaxBackup: 30
+  Compress: true
+  Json: true
+
+Configs:
+  - AssetsName: cpu
+    Host: xxxx
+  - AssetsName: nsq
+    Host: localhost:4051
