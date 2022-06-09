@@ -6,6 +6,7 @@ import "github.com/inoth/ino-gathere/src/metric"
 // 采集器中可以记录出现错误次数, 超过阈值转换为脱机状体啊, 避免浪费调用资源
 
 type ICollector interface {
+	// Init() error
 	GetMetrics() ([]metric.MetricValue, error)
 }
 
