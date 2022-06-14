@@ -3,12 +3,11 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/inoth/ino-gathere/src/collector"
-	"github.com/inoth/ino-gathere/src/metric"
 	cpuUtil "github.com/shirou/gopsutil/v3/cpu"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/plugins/inputs/system"
+	"github.com/inoth/ino-gathere/src/input"
 )
 
 var config map[string]string
@@ -36,10 +35,10 @@ func NewCPUStats(ps system.PS) *CPUStats {
 	}
 }
 
-func (c *CPUStats) GetMetrics() ([]metric.MetricValue, error) {
+func (c *CPUStats) GetMetrics() error {
 	times, err := c.ps.CPUTimes(c.PerCPU, c.TotalCPU)
 	if err != nil {
-		return nil, fmt.Errorf("error getting CPU info: %s", err)
+		return fmt.Errorf("error getting CPU info: %s", err)
 	}
 	// now := time.Now()
 	// 返回值实体, 存储采集数据
@@ -124,7 +123,7 @@ func (c *CPUStats) GetMetrics() ([]metric.MetricValue, error) {
 		c.lastStats[cts.CPU] = cts
 	}
 
-	return nil, err
+	return err
 }
 
 func (c *CPUStats) Init() error {
@@ -157,7 +156,7 @@ func activeCPUTime(t cpuUtil.TimesStat) float64 {
 }
 
 func init() {
-	collector.Add("cpu", func() collector.ICollector {
+	input.Add("cpu", func() input.Input {
 		return &CPUStats{
 			PerCPU:   true,
 			TotalCPU: true,
