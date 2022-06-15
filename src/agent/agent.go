@@ -2,7 +2,13 @@ package agent
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"runtime"
+	"sync"
+	"time"
 
+	"github.com/inoth/ino-gathere/src/accumulator"
 	"github.com/inoth/ino-gathere/src/input"
 	"github.com/inoth/ino-gathere/src/metric"
 	"github.com/inoth/ino-gathere/src/output"
@@ -35,12 +41,42 @@ func NewAgent(ag *AgentConfig) *Agent {
 	}
 }
 
-func (a *Agent) Run() {
+func (a *Agent) Run(ctx context.Context) error {
 	// run, 获取配置数据
 	// config.Get(采集器工作频率)
+	err := a.initPlugins()
+	if err != nil {
+		return err
+	}
 
 	// 作为服务启动项, 阻塞程序避免结束
-	select {}
+	next, out, err := a.startOutputs(ctx, a.ag.Outputs)
+	if err != nil {
+		return err
+	}
+	in, err := a.startInputs(next, a.ag.Inputs)
+	if err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// 运行 output 程序
+		a.runOutputs(out)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// 运行 input 程序
+		a.runInputs(ctx, in)
+	}()
+
+	wg.Wait()
+	fmt.Println("=========采集结束=========")
+	return err
 }
 
 func (a *Agent) initPlugins() error {
@@ -78,4 +114,110 @@ func (a *Agent) startOutputs(ctx context.Context, outputs []output.Output) (chan
 		unit.outputs = append(unit.outputs, output)
 	}
 	return src, unit, nil
+}
+
+func (a *Agent) runInputs(ctx context.Context, in *inputUnit) {
+	// 给每个采集器单独开线程执行
+	var wg sync.WaitGroup
+	for _, inp := range in.inputs {
+		acc := accumulator.New(in.dst)
+		wg.Add(1)
+		go func(in input.Input) {
+			defer wg.Done()
+			a.gatherLoop(ctx, acc, inp)
+		}(inp)
+	}
+	wg.Wait()
+	close(in.dst)
+	fmt.Println("采集器结束工作")
+}
+
+func (a *Agent) runOutputs(out *outputUnit) {
+	for mrc := range out.src {
+		for i, ou := range out.outputs {
+			if i == len(out.outputs)-1 {
+				ou.Write(mrc)
+			} else {
+				ou.Write(mrc.Copy())
+			}
+		}
+	}
+}
+
+// gather runs an input's gather function periodically until the context is
+// done.
+func (a *Agent) gatherLoop(
+	ctx context.Context,
+	acc accumulator.Accumulator,
+	input input.Input,
+) {
+	defer panicRecover(input)
+	// 创建一个定时器
+	ticker := time.NewTicker(time.Second * 5)
+	// go func() {
+	//     for t := range ticker.C {
+	//         fmt.Println(t)
+	//     }
+	// }()
+	for {
+		select {
+		case <-ticker.C:
+			err := a.gatherOnce(acc, input)
+			if err != nil {
+				acc.AddError(err)
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
+
+	// c := cron.New()
+	// c.AddJob("0 0/1 * * * ? ", cron.FuncJob(func() {
+	// 	//c.AddJob("0/30 * * * * ? ", cron.FuncJob(func() {
+	// 	a.gatherOnce(acc, input)
+	// }))
+	// c.Start()
+}
+
+// gatherOnce runs the input's Gather function once, logging a warning each
+// interval it fails to complete before.
+func (a *Agent) gatherOnce(
+	acc accumulator.Accumulator,
+	input input.Input,
+) error {
+	done := make(chan error)
+	go func() {
+		done <- input.GetMetrics(acc)
+	}()
+
+	// Only warn after interval seconds, even if the interval is started late.
+	// Intervals can start late if the previous interval went over or due to
+	// clock changes.
+	// slowWarning := time.NewTicker(interval)
+	// defer slowWarning.Stop()
+
+	for {
+		select {
+		case err := <-done:
+			return err
+			// case <-slowWarning.C:
+			// 	log.Printf("W! [%s] Collection took longer than expected; not complete after interval of %s",
+			// 		input.LogName(), interval)
+			// case <-ticker.Elapsed():
+			// 	log.Printf("D! [%s] Previous collection has not completed; scheduled collection skipped",
+			// 		input.LogName())
+		}
+	}
+}
+
+// panicRecover displays an error if an input panics.
+func panicRecover(input input.Input) {
+	if err := recover(); err != nil {
+		trace := make([]byte, 2048)
+		runtime.Stack(trace, true)
+		log.Printf("E! FATAL: [] panicked: %s, Stack:\n%s", err, trace)
+		log.Println("E! PLEASE REPORT THIS PANIC ON GITHUB with " +
+			"stack trace, configuration, and OS information: " +
+			"https://github.com/influxdata/telegraf/issues/new/choose")
+	}
 }

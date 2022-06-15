@@ -2,12 +2,15 @@ package cpu
 
 import (
 	"fmt"
+	"time"
 
 	cpuUtil "github.com/shirou/gopsutil/v3/cpu"
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/plugins/inputs/system"
+	"github.com/inoth/ino-gathere/src/accumulator"
 	"github.com/inoth/ino-gathere/src/input"
+	"github.com/inoth/ino-gathere/src/plugins/inputs"
 )
 
 var config map[string]string
@@ -35,12 +38,12 @@ func NewCPUStats(ps system.PS) *CPUStats {
 	}
 }
 
-func (c *CPUStats) GetMetrics() error {
+func (c *CPUStats) GetMetrics(acc accumulator.Accumulator) error {
 	times, err := c.ps.CPUTimes(c.PerCPU, c.TotalCPU)
 	if err != nil {
 		return fmt.Errorf("error getting CPU info: %s", err)
 	}
-	// now := time.Now()
+	now := time.Now()
 	// 返回值实体, 存储采集数据
 
 	for _, cts := range times {
@@ -74,7 +77,7 @@ func (c *CPUStats) GetMetrics() error {
 			if c.ReportActive {
 				fieldsC["time_active"] = activeCPUTime(cts)
 			}
-			// acc.AddCounter("cpu", fieldsC, tags, now)
+			acc.AddFields("cpu", fieldsC, tags, now)
 		}
 
 		// Add in percentage
@@ -115,7 +118,7 @@ func (c *CPUStats) GetMetrics() error {
 		if c.ReportActive {
 			fieldsG["usage_active"] = 100 * (active - lastActive) / totalDelta
 		}
-		// acc.AddGauge("cpu", fieldsG, tags, now)
+		acc.AddFields("cpu", fieldsG, tags, now)
 	}
 
 	c.lastStats = make(map[string]cpuUtil.TimesStat)
@@ -156,7 +159,7 @@ func activeCPUTime(t cpuUtil.TimesStat) float64 {
 }
 
 func init() {
-	input.Add("cpu", func() input.Input {
+	inputs.Add("cpu", func() input.Input {
 		return &CPUStats{
 			PerCPU:   true,
 			TotalCPU: true,

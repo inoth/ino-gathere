@@ -8,6 +8,9 @@ import (
 
 type Accumulator interface {
 	AddFields(measurement string, fields map[string]interface{}, tags map[string]string, tm time.Time)
+
+	// Report an error.
+	AddError(err error)
 }
 
 type accumulator struct {
@@ -24,4 +27,8 @@ func New(metrics chan<- metric.Metric) Accumulator {
 func (acc *accumulator) AddFields(measurement string, fields map[string]interface{}, tags map[string]string, tm time.Time) {
 	m := metric.New(measurement, tags, fields, tm)
 	acc.metrics <- m
+}
+
+func (acc accumulator) AddError(err error) {
+
 }
