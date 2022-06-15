@@ -21,6 +21,7 @@ type Field struct {
 // and to a lesser degree, Processor and Aggregator plugins create new Metrics
 // and Output plugins write them.
 type Metric interface {
+	String() string
 	// Name is the primary identifier for the Metric and corresponds to the
 	// measurement in the InfluxDB data model.
 	Name() string

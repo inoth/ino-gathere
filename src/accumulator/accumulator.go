@@ -29,6 +29,4 @@ func (acc *accumulator) AddFields(measurement string, fields map[string]interfac
 	acc.metrics <- m
 }
 
-func (acc accumulator) AddError(err error) {
-
-}
+func (acc accumulator) AddError(err error) {}

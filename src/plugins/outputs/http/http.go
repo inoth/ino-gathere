@@ -19,7 +19,8 @@ func (HttpOutput) Connect() error { return nil }
 func (HttpOutput) Close() error   { return nil }
 
 func (HttpOutput) Write(metrics metric.Metric) error {
-	fmt.Printf("%v: %v\n%v\n", metrics.Name(), metrics.Tags(), metrics.Fields())
+	// fmt.Printf("%v: %v\n%v\n", metrics.Name(), metrics.Tags(), metrics.Fields())
+	fmt.Println(metrics.String())
 	return nil
 }
 

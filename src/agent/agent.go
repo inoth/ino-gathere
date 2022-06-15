@@ -150,15 +150,11 @@ func (a *Agent) gatherLoop(
 	ctx context.Context,
 	acc accumulator.Accumulator,
 	input input.Input,
+	// 采集间隔通过配置初始化到 input 模组中
 ) {
 	defer panicRecover(input)
 	// 创建一个定时器
-	ticker := time.NewTicker(time.Second * 5)
-	// go func() {
-	//     for t := range ticker.C {
-	//         fmt.Println(t)
-	//     }
-	// }()
+	ticker := time.NewTicker(time.Second * 3)
 	for {
 		select {
 		case <-ticker.C:
@@ -170,13 +166,6 @@ func (a *Agent) gatherLoop(
 			return
 		}
 	}
-
-	// c := cron.New()
-	// c.AddJob("0 0/1 * * * ? ", cron.FuncJob(func() {
-	// 	//c.AddJob("0/30 * * * * ? ", cron.FuncJob(func() {
-	// 	a.gatherOnce(acc, input)
-	// }))
-	// c.Start()
 }
 
 // gatherOnce runs the input's Gather function once, logging a warning each
