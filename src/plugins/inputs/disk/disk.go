@@ -51,7 +51,7 @@ func (ds *DiskStats) Init() error {
 }
 
 func (ds *DiskStats) GetMetrics(acc accumulator.Accumulator) error {
-	disks, partitions, err := ds.ps.DiskUsage(ds.MountPoints, ds.IgnoreMountOpts)
+	disks, partitions, err := ds.ps.DiskUsage(ds.MountPoints, ds.IgnoreMountOpts, ds.IgnoreFS)
 	if err != nil {
 		return fmt.Errorf("error getting disk usage info: %s", err)
 	}
