@@ -12,7 +12,7 @@ type HttpOutput struct {
 }
 
 func (HttpOutput) Init() error {
-	fmt.Println("http 做了一些初始化操作")
+	// fmt.Println("http 做了一些初始化操作")
 	return nil
 }
 func (HttpOutput) Connect() error { return nil }

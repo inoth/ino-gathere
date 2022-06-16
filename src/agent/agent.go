@@ -124,7 +124,7 @@ func (a *Agent) runInputs(ctx context.Context, in *inputUnit) {
 		wg.Add(1)
 		go func(in input.Input) {
 			defer wg.Done()
-			a.gatherLoop(ctx, acc, inp)
+			a.gatherLoop(ctx, acc, in)
 		}(inp)
 	}
 	wg.Wait()
