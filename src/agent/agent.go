@@ -99,9 +99,14 @@ func (a *Agent) startInputs(dst chan<- metric.Metric, inputs []input.Input) (*in
 	unit := &inputUnit{
 		dst: dst,
 	}
-	for _, input := range inputs {
-		// 初始化累加器, 添加组建中
-		unit.inputs = append(unit.inputs, input)
+	n := len(inputs)
+	unit.inputs = make([]input.Input, n)
+	// for _, input := range inputs {
+	// 	// 初始化累加器, 添加组建中
+	// 	unit.inputs = append(unit.inputs, input)
+	// }
+	for i := 0; i < n; i++ {
+		unit.inputs[i] = inputs[i]
 	}
 	return unit, nil
 }
@@ -109,9 +114,14 @@ func (a *Agent) startInputs(dst chan<- metric.Metric, inputs []input.Input) (*in
 func (a *Agent) startOutputs(ctx context.Context, outputs []output.Output) (chan<- metric.Metric, *outputUnit, error) {
 	src := make(chan metric.Metric, 100)
 	unit := &outputUnit{src: src}
-	for _, output := range outputs {
-		// 初始化连接
-		unit.outputs = append(unit.outputs, output)
+	n := len(outputs)
+	unit.outputs = make([]output.Output, n)
+	// for _, output := range outputs {
+	// 	// 初始化连接
+	// 	unit.outputs = append(unit.outputs, output)
+	// }
+	for i := 0; i < n; i++ {
+		unit.outputs[i] = outputs[i]
 	}
 	return src, unit, nil
 }

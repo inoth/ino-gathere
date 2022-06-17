@@ -13,8 +13,21 @@ import (
 // 保存采集器信息
 // 输出器信息
 type AgentConfig struct {
-	Inputs  []input.Input
+	Inputs []input.Input
+	// Inputs []InputConfig
 	Outputs []output.Output
+	// Outputs []OutputConfig
+}
+
+// 包含采集器需要用到的配置信息
+// 采集器自身, 方便从第三方写入配置
+type InputConfig struct {
+	Config map[string]string
+	Input  input.Input
+}
+type OutputConfig struct {
+	Config map[string]string
+	OutPut input.Input
 }
 
 // 加载所有装载的输入、输出模块
@@ -25,6 +38,11 @@ func (ag *AgentConfig) Init() error {
 	}
 	for _, input := range inputs.ReadyCollectors {
 		ag.Inputs = append(ag.Inputs, input())
+		// ag.Inputs = append(ag.Inputs, InputConfig{
+		// 	// 从 viper 中读取
+		// 	//Config: viper.get(name),
+		// 	Input: input(),
+		// })
 	}
 	if len(outputs.ReadyOutputs) <= 0 {
 		return errors.New("not found output")
